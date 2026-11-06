@@ -21,6 +21,16 @@ class CanauxNatifs {
     });
   }
 
+  // Exercice 2 : lampe torche
+  static const MethodChannel _torche =
+      MethodChannel('appareil/torche');
+
+  static Future<void> allumerTorche(bool etat) async {
+    await _torche.invokeMethod('allumer', {
+      'etat': etat,
+    });
+  }
+
   // Étape 3 : capteur de lumière
   static const EventChannel _lumiere =
       EventChannel('capteur/lumiere');

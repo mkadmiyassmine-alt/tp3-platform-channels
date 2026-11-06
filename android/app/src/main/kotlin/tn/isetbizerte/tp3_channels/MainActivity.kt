@@ -49,7 +49,11 @@ class MainActivity : FlutterActivity() {
         // Exercice 1 : capteur de proximité
         EventChannel(messenger, "capteur/proximite")
             .setStreamHandler(CapteurProximite(this))
-
+        
+        // Exercice 2 : lampe torche
+        MethodChannel(messenger, "appareil/torche")
+            .setMethodCallHandler(LampeTorche(this))
+            
         // Étape 4a : demander la permission du microphone
         MethodChannel(messenger, "audio/permission")
             .setMethodCallHandler { call, result ->

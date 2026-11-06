@@ -50,6 +50,8 @@ class NiveauSonore(private val scope: CoroutineScope) :
             }
 
             val echantillons = ShortArray(taille)
+            var dernierEnvoi = 0L
+
             micro.startRecording()
 
             try {
@@ -61,10 +63,16 @@ class NiveauSonore(private val scope: CoroutineScope) :
                     )
 
                     if (n > 0) {
-                        val db = niveauDb(echantillons, n)
+                        val maintenant = System.currentTimeMillis()
 
-                        withContext(Dispatchers.Main) {
-                            events.success(db)
+                        if (maintenant - dernierEnvoi >= 200) {
+                            val db = niveauDb(echantillons, n)
+
+                            dernierEnvoi = maintenant
+
+                            withContext(Dispatchers.Main) {
+                                events.success(db)
+                            }
                         }
                     }
                 }
