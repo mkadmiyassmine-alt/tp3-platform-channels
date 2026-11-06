@@ -17,7 +17,6 @@ class PageCanaux extends StatefulWidget {
 }
 
 class _PageCanauxState extends State<PageCanaux> {
-
   // Étape 1 : informations appareil
   String _infos = 'Appuyez sur le bouton';
 
@@ -28,6 +27,11 @@ class _PageCanauxState extends State<PageCanaux> {
   // Étape 4 : niveau sonore
   double? _dbfs;
   StreamSubscription<double>? _abonnementAudio;
+
+  // Exercice 1 : proximité
+  bool? _proche;
+  StreamSubscription<bool>? _abonnementProximite;
+  String? _erreurProximite;
 
   void _message(String texte) {
     if (!mounted) return;
@@ -58,7 +62,6 @@ class _PageCanauxState extends State<PageCanaux> {
   Future<void> _vibrer(String motif) async {
     try {
       await CanauxNatifs.vibrer(motif);
-
       _message('Vibration : $motif');
     } on PlatformException catch (e) {
       _message('Erreur ${e.code} : ${e.message}');
@@ -68,7 +71,6 @@ class _PageCanauxState extends State<PageCanaux> {
   // ÉTAPE 3 : démarrer / arrêter le capteur de lumière
   void _basculerLumiere() {
     if (_abonnementLumiere == null) {
-
       _abonnementLumiere = CanauxNatifs.lumiere().listen(
         (lux) {
           if (!mounted) return;
@@ -84,6 +86,7 @@ class _PageCanauxState extends State<PageCanaux> {
         },
       );
 
+      setState(() {});
     } else {
       _abonnementLumiere!.cancel();
       _abonnementLumiere = null;
@@ -94,12 +97,9 @@ class _PageCanauxState extends State<PageCanaux> {
 
   // ÉTAPE 4 : démarrer le microphone
   Future<void> _demarrerAudio() async {
-
     if (_abonnementAudio != null) return;
 
     try {
-
-      // 1. Demander la permission du microphone
       final autorise =
           await CanauxNatifs.demanderPermissionMicro();
 
@@ -110,12 +110,10 @@ class _PageCanauxState extends State<PageCanaux> {
         return;
       }
 
-      // 2. Réinitialiser la valeur
       setState(() {
         _dbfs = null;
       });
 
-      // 3. Écouter le flux envoyé par Kotlin
       _abonnementAudio = CanauxNatifs.niveauSonore().listen(
         (valeur) {
           if (!mounted) return;
@@ -137,7 +135,6 @@ class _PageCanauxState extends State<PageCanaux> {
           );
         },
       );
-
     } on PlatformException catch (e) {
       _message('Erreur ${e.code} : ${e.message}');
     } catch (e) {
@@ -147,7 +144,6 @@ class _PageCanauxState extends State<PageCanaux> {
 
   // ÉTAPE 4 : arrêter le microphone
   Future<void> _arreterAudio() async {
-
     await _abonnementAudio?.cancel();
     _abonnementAudio = null;
 
@@ -156,11 +152,72 @@ class _PageCanauxState extends State<PageCanaux> {
     setState(() {});
   }
 
+  // EXERCICE 1 : démarrer / arrêter le capteur de proximité
+  void _basculerProximite() {
+    if (_abonnementProximite == null) {
+      setState(() {
+        _proche = null;
+        _erreurProximite = null;
+      });
+
+      _abonnementProximite = CanauxNatifs.proximite().listen(
+        (proche) {
+          if (!mounted) return;
+
+          setState(() {
+            _proche = proche;
+            _erreurProximite = null;
+          });
+        },
+        onError: (e) {
+          if (!mounted) return;
+
+          final message = e is PlatformException
+              ? e.message ?? e.code
+              : e.toString();
+
+          setState(() {
+            _abonnementProximite = null;
+            _proche = null;
+            _erreurProximite = message;
+          });
+
+          _message('Erreur proximité : $message');
+        },
+        onDone: () {
+          if (!mounted) return;
+
+          setState(() {
+            _abonnementProximite = null;
+          });
+        },
+      );
+
+      setState(() {});
+    } else {
+      _arreterProximite();
+    }
+  }
+
+  // Arrêter le capteur de proximité
+  Future<void> _arreterProximite() async {
+    await _abonnementProximite?.cancel();
+    _abonnementProximite = null;
+
+    if (!mounted) return;
+
+    setState(() {
+      _proche = null;
+      _erreurProximite = null;
+    });
+  }
+
   // Libérer les ressources lorsque la page disparaît
   @override
   void dispose() {
     _abonnementLumiere?.cancel();
     _abonnementAudio?.cancel();
+    _abonnementProximite?.cancel();
 
     super.dispose();
   }
@@ -189,20 +246,13 @@ class _PageCanauxState extends State<PageCanaux> {
       appBar: AppBar(
         title: const Text('TP 3 - Platform Channels'),
       ),
-
       body: ListView(
         padding: const EdgeInsets.all(16),
-
         children: [
-
-          // =====================================
           // ÉTAPE 1 : INFORMATIONS APPAREIL
-          // =====================================
-
           _carte('1. Infos appareil (MethodChannel)', [
             Text(_infos),
             const SizedBox(height: 8),
-
             FilledButton(
               onPressed: _lireInfos,
               child: const Text('Lire les infos'),
@@ -211,31 +261,24 @@ class _PageCanauxState extends State<PageCanaux> {
 
           const SizedBox(height: 12),
 
-          // =====================================
           // ÉTAPE 2 : VIBRATION
-          // =====================================
-
           _carte('2. Vibration (arguments + erreurs)', [
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: [
-
                 OutlinedButton(
                   onPressed: () => _vibrer('court'),
                   child: const Text('Court'),
                 ),
-
                 OutlinedButton(
                   onPressed: () => _vibrer('long'),
                   child: const Text('Long'),
                 ),
-
                 OutlinedButton(
                   onPressed: () => _vibrer('sos'),
                   child: const Text('SOS'),
                 ),
-
                 OutlinedButton(
                   onPressed: () => _vibrer('inconnu'),
                   child: const Text('Tester erreur'),
@@ -246,25 +289,17 @@ class _PageCanauxState extends State<PageCanaux> {
 
           const SizedBox(height: 12),
 
-          // =====================================
           // ÉTAPE 3 : CAPTEUR DE LUMIÈRE
-          // =====================================
-
           _carte('3. Capteur de lumière (EventChannel)', [
-
             Text(
               _lux == null
                   ? 'Luminosité : -- lux'
                   : 'Luminosité : ${_lux!.toStringAsFixed(0)} lux',
-
               style: Theme.of(context).textTheme.headlineMedium,
             ),
-
             const SizedBox(height: 8),
-
             FilledButton(
               onPressed: _basculerLumiere,
-
               child: Text(
                 _abonnementLumiere == null
                     ? 'Démarrer'
@@ -275,30 +310,47 @@ class _PageCanauxState extends State<PageCanaux> {
 
           const SizedBox(height: 12),
 
-          // =====================================
           // ÉTAPE 4 : MICROPHONE ET COROUTINE
-          // =====================================
-
           _carte('4. Niveau sonore (EventChannel + Coroutine)', [
-
             Text(
               _dbfs == null
                   ? 'Niveau sonore : -- dBFS'
                   : 'Niveau sonore : '
                       '${_dbfs!.toStringAsFixed(1)} dBFS',
-
               style: Theme.of(context).textTheme.headlineMedium,
             ),
-
             const SizedBox(height: 12),
-
             FilledButton(
               onPressed: _abonnementAudio == null
                   ? _demarrerAudio
                   : _arreterAudio,
-
               child: Text(
                 _abonnementAudio == null
+                    ? 'Démarrer'
+                    : 'Arrêter',
+              ),
+            ),
+          ]),
+
+          const SizedBox(height: 12),
+
+          // EXERCICE 1 : CAPTEUR DE PROXIMITÉ
+          _carte('5. Capteur de proximité (EventChannel)', [
+            Text(
+              _erreurProximite != null
+                  ? 'Erreur : $_erreurProximite'
+                  : _proche == null
+                      ? 'État : --'
+                      : _proche!
+                          ? 'État : Proche'
+                          : 'État : Loin',
+              style: Theme.of(context).textTheme.headlineMedium,
+            ),
+            const SizedBox(height: 12),
+            FilledButton(
+              onPressed: _basculerProximite,
+              child: Text(
+                _abonnementProximite == null
                     ? 'Démarrer'
                     : 'Arrêter',
               ),

@@ -46,20 +46,20 @@ class MainActivity : FlutterActivity() {
         EventChannel(messenger, "capteur/lumiere")
             .setStreamHandler(CapteurLumiere(this))
 
+        // Exercice 1 : capteur de proximité
+        EventChannel(messenger, "capteur/proximite")
+            .setStreamHandler(CapteurProximite(this))
+
         // Étape 4a : demander la permission du microphone
         MethodChannel(messenger, "audio/permission")
             .setMethodCallHandler { call, result ->
-
                 when (call.method) {
-
                     "demander" -> {
-
                         if (checkSelfPermission(
                                 Manifest.permission.RECORD_AUDIO
                             ) == PackageManager.PERMISSION_GRANTED
                         ) {
                             result.success(true)
-
                         } else {
                             resultatPermission = result
 
@@ -92,7 +92,6 @@ class MainActivity : FlutterActivity() {
         )
 
         if (requestCode == REQ_MICRO) {
-
             val autorise =
                 grantResults.isNotEmpty() &&
                 grantResults[0] == PackageManager.PERMISSION_GRANTED

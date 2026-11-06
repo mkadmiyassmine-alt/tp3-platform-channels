@@ -10,15 +10,16 @@ class CanauxNatifs {
     final r = await _infos.invokeMapMethod<String, dynamic>('lire');
     return r ?? {};
   }
-  // Étape 2 : vibration
-static const MethodChannel _vibration =
-    MethodChannel('appareil/vibrer');
 
-static Future<void> vibrer(String motif) async {
-  await _vibration.invokeMethod('vibrer', {
-    'motif': motif,
-  });
-}
+  // Étape 2 : vibration
+  static const MethodChannel _vibration =
+      MethodChannel('appareil/vibrer');
+
+  static Future<void> vibrer(String motif) async {
+    await _vibration.invokeMethod('vibrer', {
+      'motif': motif,
+    });
+  }
 
   // Étape 3 : capteur de lumière
   static const EventChannel _lumiere =
@@ -28,6 +29,16 @@ static Future<void> vibrer(String motif) async {
     return _lumiere
         .receiveBroadcastStream()
         .map((v) => (v as num).toDouble());
+  }
+
+  // Exercice 1 : capteur de proximité
+  static const EventChannel _proximite =
+      EventChannel('capteur/proximite');
+
+  static Stream<bool> proximite() {
+    return _proximite
+        .receiveBroadcastStream()
+        .map((valeur) => valeur as bool);
   }
 
   // Étape 4 : permission microphone
